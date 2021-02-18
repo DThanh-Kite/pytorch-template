@@ -1,9 +1,10 @@
 import torch.nn as nn
 import numpy as np
+import pytorch_lightning as pl
 from abc import abstractmethod
 
 
-class BaseModel(nn.Module):
+class BaseModel(pl.LightningModule):
     """
     Base class for all models
     """
