@@ -5,6 +5,7 @@ from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
 from logger import setup_logging
+from loguru import logger as guru_logger
 from utils import read_json, write_json
 
 
@@ -42,9 +43,9 @@ class ConfigParser:
         # configure logging module
         setup_logging(self.log_dir)
         self.log_levels = {
-            0: logging.WARNING,
-            1: logging.INFO,
-            2: logging.DEBUG
+            0: guru_logger.warning,
+            1: guru_logger.info,
+            2: guru_logger.debug
         }
 
     @classmethod
@@ -114,8 +115,7 @@ class ConfigParser:
     def get_logger(self, name, verbosity=2):
         msg_verbosity = 'verbosity option {} is invalid. Valid options are {}.'.format(verbosity, self.log_levels.keys())
         assert verbosity in self.log_levels, msg_verbosity
-        logger = logging.getLogger(name)
-        logger.setLevel(self.log_levels[verbosity])
+        logger = guru_logger
         return logger
 
     # setting read-only attributes
