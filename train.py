@@ -6,9 +6,11 @@ import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
+import pytorch_lightning as pl
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 # fix random seeds for reproducibility
@@ -18,22 +20,18 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
+
 def main(config):
     logger = config.get_logger('train')
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
-    valid_data_loader = data_loader.split_validation()
+    # valid_data_loader = data_loader.split_validation()
+    valid_data_loader = None
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     logger.info(model)
-
-    # prepare for (multi-device) GPU training
-    device, device_ids = prepare_device(config['n_gpu'])
-    model = model.to(device)
-    if len(device_ids) > 1:
-        model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
@@ -44,14 +42,23 @@ def main(config):
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      device=device,
-                      data_loader=data_loader,
-                      valid_data_loader=valid_data_loader,
-                      lr_scheduler=lr_scheduler)
+    trainer_model = Trainer(model, criterion, metrics, optimizer,
+                            config=config,
+                            data_loader=data_loader,
+                            valid_data_loader=valid_data_loader,
+                            lr_scheduler=lr_scheduler)
 
-    trainer.train()
+    early_stop_mode, early_stop_monitor = config['trainer']['monitor']. split(' ')
+    early_stop_callback = EarlyStopping(
+        monitor=early_stop_monitor,
+        min_delta=0.00,
+        patience=config['trainer']['early_stop'],
+        verbose=False,
+        mode=early_stop_mode
+    )
+    trainer = pl.Trainer(gpus=config['n_gpu'],
+                         callbacks=[early_stop_callback])
+    trainer.fit(trainer_model, data_loader)
 
 
 if __name__ == '__main__':

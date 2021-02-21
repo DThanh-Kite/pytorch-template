@@ -1,14 +1,17 @@
 import torch
+import pytorch_lightning as pl
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
+from pytorch_lightning.loggers import TensorBoardLogger
 
 
-class BaseTrainer:
+class BaseTrainer(pl.LightningModule):
     """
     Base class for all trainers
     """
     def __init__(self, model, criterion, metric_ftns, optimizer, config):
+        super().__init__()
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
@@ -40,63 +43,71 @@ class BaseTrainer:
         self.checkpoint_dir = config.save_dir
 
         # setup visualization writer instance                
-        self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+        # self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+        self.writer = TensorBoardLogger(save_dir=config.log_dir)
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
 
-    @abstractmethod
-    def _train_epoch(self, epoch):
-        """
-        Training logic for an epoch
+    # @abstractmethod
+    # def _train_epoch(self, epoch):
+    #     """
+    #     Training logic for an epoch
 
-        :param epoch: Current epoch number
-        """
+    #     :param epoch: Current epoch number
+    #     """
+    #     raise NotImplementedError
+
+    @abstractmethod
+    def training_step(self, batch, batch_idx):
         raise NotImplementedError
 
-    def train(self):
-        """
-        Full training logic
-        """
-        not_improved_count = 0
-        for epoch in range(self.start_epoch, self.epochs + 1):
-            result = self._train_epoch(epoch)
+    def configure_optimizers(self):
+        return self.optimizer
 
-            # save logged informations into log dict
-            log = {'epoch': epoch}
-            log.update(result)
+    # def train(self):
+    #     """
+    #     Full training logic
+    #     """
+    #     not_improved_count = 0
+    #     for epoch in range(self.start_epoch, self.epochs + 1):
+    #         result = self._train_epoch(epoch)
 
-            # print logged informations to the screen
-            for key, value in log.items():
-                self.logger.info('    {:15s}: {}'.format(str(key), value))
+    #         # save logged informations into log dict
+    #         log = {'epoch': epoch}
+    #         log.update(result)
 
-            # evaluate model performance according to configured metric, save best checkpoint as model_best
-            best = False
-            if self.mnt_mode != 'off':
-                try:
-                    # check whether model performance improved or not, according to specified metric(mnt_metric)
-                    improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-                               (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
-                except KeyError:
-                    self.logger.warning("Warning: Metric '{}' is not found. "
-                                        "Model performance monitoring is disabled.".format(self.mnt_metric))
-                    self.mnt_mode = 'off'
-                    improved = False
+    #         # print logged informations to the screen
+    #         for key, value in log.items():
+    #             self.logger.info('    {:15s}: {}'.format(str(key), value))
 
-                if improved:
-                    self.mnt_best = log[self.mnt_metric]
-                    not_improved_count = 0
-                    best = True
-                else:
-                    not_improved_count += 1
+    #         # evaluate model performance according to configured metric, save best checkpoint as model_best
+    #         best = False
+    #         if self.mnt_mode != 'off':
+    #             try:
+    #                 # check whether model performance improved or not, according to specified metric(mnt_metric)
+    #                 improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
+    #                            (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
+    #             except KeyError:
+    #                 self.logger.warning("Warning: Metric '{}' is not found. "
+    #                                     "Model performance monitoring is disabled.".format(self.mnt_metric))
+    #                 self.mnt_mode = 'off'
+    #                 improved = False
 
-                if not_improved_count > self.early_stop:
-                    self.logger.info("Validation performance didn\'t improve for {} epochs. "
-                                     "Training stops.".format(self.early_stop))
-                    break
+    #             if improved:
+    #                 self.mnt_best = log[self.mnt_metric]
+    #                 not_improved_count = 0
+    #                 best = True
+    #             else:
+    #                 not_improved_count += 1
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=best)
+    #             if not_improved_count > self.early_stop:
+    #                 self.logger.info("Validation performance didn\'t improve for {} epochs. "
+    #                                  "Training stops.".format(self.early_stop))
+    #                 break
+
+    #         if epoch % self.save_period == 0:
+    #             self._save_checkpoint(epoch, save_best=best)
 
     def _save_checkpoint(self, epoch, save_best=False):
         """
