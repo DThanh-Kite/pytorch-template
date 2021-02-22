@@ -23,7 +23,8 @@ class BaseModel(pl.LightningModule):
         self.save_period = cfg_trainer['save_period']
 
         self.checkpoint_dir = config.save_dir
-        self.accuracy = pl.metrics.Accuracy()
+        self.train_accuracy = pl.metrics.Accuracy()
+        self.val_accuracy = pl.metrics.Accuracy()
         # setup visualization writer instance                
         # self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
         self.writer = TensorBoardLogger(save_dir=config.log_dir)
@@ -37,14 +38,15 @@ class BaseModel(pl.LightningModule):
         output = self.forward(data)
         loss = self.criterion(output, target)
 
-        for met in self.metric_ftns:
-            self.log(met.__name__, met(output, target))
+        # for met in self.metric_ftns:
+        #     self.log(met.__name__, met(output, target))
+        self.log('train_acc_step', self.train_accuracy(output, target))
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def training_epoch_end(self, outs):
         # log epoch metric
-        self.log('train_acc_epoch', self.accuracy.compute())
+        self.log('train_acc_epoch', self.train_accuracy.compute())
 
     def configure_optimizers(self):
         trainable_params = filter(lambda p: p.requires_grad, self.parameters())
@@ -57,10 +59,15 @@ class BaseModel(pl.LightningModule):
         output = self.forward(data)
         loss = self.criterion(output, target)
 
-        for met in self.metric_ftns:
-            self.log(met.__name__, met(output, target))
+        # for met in self.metric_ftns:
+        #     self.log(met.__name__, met(output, target))
+        self.log('val_acc_step', self.val_accuracy(output, target))
         self.log('val_loss', loss)
         return loss
+
+    def validation_epoch_end(self, outs):
+        # log epoch metric
+        self.log('val_acc_epoch', self.val_accuracy.compute())
 
     def test_step(self, batch, batch_idx):
         data, target = batch
