@@ -61,6 +61,9 @@ class BaseDataLoader(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.valid_sampler, batch_size=self.init_kwargs.batch_size)
 
+    def test_dataloader(self):
+        return DataLoader(self.valid_sampler, batch_size=self.init_kwargs.batch_size)
+
     def split_validation(self):
         if self.valid_sampler is None:
             return None

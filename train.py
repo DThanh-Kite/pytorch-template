@@ -29,24 +29,19 @@ def main(config):
     # valid_data_loader = data_loader.split_validation()
     valid_data_loader = None
 
-    # build model architecture, then print to console
-    model = config.init_obj('arch', module_arch)
-    logger.info(model)
-
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
-    lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+    # build model architecture, then print to console
+    model = config.init_obj('arch', module_arch, criterion=criterion, metric_ftns=metrics, config=config)
+    logger.info(model)
 
-    trainer_model = Trainer(model, criterion, metrics, optimizer,
-                            config=config,
-                            data_loader=data_loader,
-                            valid_data_loader=valid_data_loader,
-                            lr_scheduler=lr_scheduler)
+    # trainer_model = Trainer(model, criterion, metrics, optimizer,
+    #                         config=config,
+    #                         data_loader=data_loader,
+    #                         valid_data_loader=valid_data_loader,
+    #                         lr_scheduler=lr_scheduler)
 
     early_stop_mode, early_stop_monitor = config['trainer']['monitor']. split(' ')
     early_stop_callback = EarlyStopping(
@@ -61,7 +56,8 @@ def main(config):
                         limit_train_batches=config['trainer']['train_batches'],
                         limit_val_batches=config['trainer']['val_batches'],
                         limit_test_batches=config['trainer']['test_batches'])
-    trainer.fit(trainer_model, data_loader)
+    # trainer.fit(trainer_model, data_loader)
+    trainer.fit(model, data_loader)
 
 
 if __name__ == '__main__':
