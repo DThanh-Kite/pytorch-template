@@ -45,6 +45,10 @@
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true
+        "tensorboard": true,
+
+        "train_batches": 0.1,
+        "val_batches": 1.0,
+        "test_batches": 1.0
     }
 }

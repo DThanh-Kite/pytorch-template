@@ -57,7 +57,10 @@ def main(config):
         mode=early_stop_mode
     )
     trainer = pl.Trainer(gpus=config['n_gpu'],
-                         callbacks=[early_stop_callback])
+                        callbacks=[early_stop_callback],
+                        limit_train_batches=config['trainer']['train_batches'],
+                        limit_val_batches=config['trainer']['val_batches'],
+                        limit_test_batches=config['trainer']['test_batches'])
     trainer.fit(trainer_model, data_loader)
 
 
