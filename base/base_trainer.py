@@ -58,13 +58,29 @@ class BaseTrainer(pl.LightningModule):
     #     """
     #     raise NotImplementedError
 
-    @abstractmethod
     def training_step(self, batch, batch_idx):
-        raise NotImplementedError
+        data, target = batch
+
+        output = self.model(data)
+        loss = self.criterion(output, target)
+
+        for met in self.metric_ftns:
+            self.log(met.__name__, met(output, target))
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return loss
 
     def configure_optimizers(self):
         return self.optimizer
 
+    def validation_step(self, batch, batch_idx):
+        data, target = batch
+        output = self.model(data)
+        loss = self.criterion(output, target)
+
+        for met in self.metric_ftns:
+            self.log(met.__name__, met(output, target))
+        self.log('val_loss', loss)
+        return loss
     # def train(self):
     #     """
     #     Full training logic

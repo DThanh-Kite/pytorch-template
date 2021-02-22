@@ -22,14 +22,6 @@ class Trainer(BaseTrainer):
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
-    def training_step(self, batch, batch_idx):
-        data, target = batch
-
-        output = self.model(data)
-        loss = self.criterion(output, target)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return loss
-
     # def _train_epoch(self, epoch):
     #     """
     #     Training logic for an epoch
@@ -99,12 +91,6 @@ class Trainer(BaseTrainer):
             self.writer.add_histogram(name, p, bins='auto')
         return self.valid_metrics.result()
 
-    def validation_step(self, batch, batch_idx):
-        data, target = batch
-        output = self.model(data)
-        loss = self.criterion(output, target)
-        self.log('val_loss', loss)
-        return loss
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
