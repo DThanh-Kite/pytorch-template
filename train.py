@@ -1,7 +1,6 @@
 import argparse
 import collections
 import torch
-import numpy as np
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
@@ -10,6 +9,7 @@ import pytorch_lightning as pl
 from parse_config import ConfigParser
 from utils import prepare_device
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.loggers import TensorBoardLogger
 
 
 # fix random seeds for reproducibility
@@ -17,11 +17,12 @@ SEED = 123
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-np.random.seed(SEED)
 
 
 def main(config):
     logger = config.get_logger('train')
+    logger.info(config.log_dir)
+    tb_logger = TensorBoardLogger(save_dir=config.log_dir)
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
@@ -44,6 +45,7 @@ def main(config):
     )
     logger.info(f'Resume from file: {config.resume}')
     trainer = pl.Trainer(gpus=config['n_gpu'],
+                         logger=tb_logger,
                          callbacks=[early_stop_callback],
                          limit_train_batches=config['trainer']['train_batches'],
                          limit_val_batches=config['trainer']['val_batches'],

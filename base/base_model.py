@@ -3,7 +3,6 @@ import torch.nn as nn
 import numpy as np
 import pytorch_lightning as pl
 from abc import abstractmethod
-from pytorch_lightning.loggers import TensorBoardLogger
 
 
 class BaseModel(pl.LightningModule):
@@ -26,7 +25,7 @@ class BaseModel(pl.LightningModule):
         self.val_accuracy = pl.metrics.Accuracy()
         self.test_accuracy = pl.metrics.Accuracy()
         # setup visualization writer instance                
-        self.writer = TensorBoardLogger(save_dir=config.log_dir)
+        self.save_hyperparameters(config.config)
 
     def training_step(self, batch, batch_idx):
         data, target = batch
