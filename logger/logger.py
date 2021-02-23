@@ -1,10 +1,10 @@
-import logging
 import logging.config
 from pathlib import Path
 from utils import read_json
+from loguru import logger as guru_logger
 
 
-def setup_logging(save_dir, log_config='logger/logger_config.json', default_level=logging.INFO):
+def setup_logging(save_dir, log_config='logger/logger_config.json', default_level=guru_logger.info):
     """
     Setup logging configuration
     """

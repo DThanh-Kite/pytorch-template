@@ -5,6 +5,7 @@ from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
 from logger import setup_logging
+from loguru import logger as guru_logger
 from utils import read_json, write_json
 
 
@@ -42,9 +43,9 @@ class ConfigParser:
         # configure logging module
         setup_logging(self.log_dir)
         self.log_levels = {
-            0: logging.WARNING,
-            1: logging.INFO,
-            2: logging.DEBUG
+            0: guru_logger.warning,
+            1: guru_logger.info,
+            2: guru_logger.debug
         }
 
     @classmethod
@@ -61,12 +62,12 @@ class ConfigParser:
             os.environ["CUDA_VISIBLE_DEVICES"] = args.device
         if args.resume is not None:
             resume = Path(args.resume)
-            cfg_fname = resume.parent / 'config.json'
         else:
-            msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
-            assert args.config is not None, msg_no_cfg
             resume = None
-            cfg_fname = Path(args.config)
+
+        msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
+        assert args.config is not None, msg_no_cfg
+        cfg_fname = Path(args.config)
         
         config = read_json(cfg_fname)
         if args.config and resume:
@@ -114,8 +115,7 @@ class ConfigParser:
     def get_logger(self, name, verbosity=2):
         msg_verbosity = 'verbosity option {} is invalid. Valid options are {}.'.format(verbosity, self.log_levels.keys())
         assert verbosity in self.log_levels, msg_verbosity
-        logger = logging.getLogger(name)
-        logger.setLevel(self.log_levels[verbosity])
+        logger = guru_logger
         return logger
 
     # setting read-only attributes

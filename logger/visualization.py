@@ -1,5 +1,6 @@
 import importlib
 from datetime import datetime
+from pytorch_lightning.loggers import TensorBoardLogger
 
 
 class TensorboardWriter():
