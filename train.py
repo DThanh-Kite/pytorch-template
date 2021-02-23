@@ -8,7 +8,6 @@ import model.metric as module_metric
 import model.model as module_arch
 import pytorch_lightning as pl
 from parse_config import ConfigParser
-from trainer import Trainer
 from utils import prepare_device
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
@@ -26,8 +25,6 @@ def main(config):
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
-    # valid_data_loader = data_loader.split_validation()
-    valid_data_loader = None
 
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
@@ -47,12 +44,12 @@ def main(config):
     )
     logger.info(f'Resume from file: {config.resume}')
     trainer = pl.Trainer(gpus=config['n_gpu'],
-                        callbacks=[early_stop_callback],
-                        limit_train_batches=config['trainer']['train_batches'],
-                        limit_val_batches=config['trainer']['val_batches'],
-                        limit_test_batches=config['trainer']['test_batches'],
-                        default_root_dir=config['trainer']['save_dir'],
-                        resume_from_checkpoint=config.resume)
+                         callbacks=[early_stop_callback],
+                         limit_train_batches=config['trainer']['train_batches'],
+                         limit_val_batches=config['trainer']['val_batches'],
+                         limit_test_batches=config['trainer']['test_batches'],
+                         default_root_dir=config['trainer']['save_dir'],
+                         resume_from_checkpoint=config.resume)
     trainer.fit(model, data_loader)
 
 
