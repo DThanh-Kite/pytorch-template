@@ -37,12 +37,6 @@ def main(config):
     model = config.init_obj('arch', module_arch, criterion=criterion, metric_ftns=metrics, config=config)
     logger.info(model)
 
-    # trainer_model = Trainer(model, criterion, metrics, optimizer,
-    #                         config=config,
-    #                         data_loader=data_loader,
-    #                         valid_data_loader=valid_data_loader,
-    #                         lr_scheduler=lr_scheduler)
-
     early_stop_mode, early_stop_monitor = config['trainer']['monitor']. split(' ')
     early_stop_callback = EarlyStopping(
         monitor=early_stop_monitor,
@@ -51,12 +45,14 @@ def main(config):
         verbose=False,
         mode=early_stop_mode
     )
+    logger.info(f'Resume from file: {config.resume}')
     trainer = pl.Trainer(gpus=config['n_gpu'],
                         callbacks=[early_stop_callback],
                         limit_train_batches=config['trainer']['train_batches'],
                         limit_val_batches=config['trainer']['val_batches'],
-                        limit_test_batches=config['trainer']['test_batches'])
-    # trainer.fit(trainer_model, data_loader)
+                        limit_test_batches=config['trainer']['test_batches'],
+                        default_root_dir=config['trainer']['save_dir'],
+                        resume_from_checkpoint=config.resume)
     trainer.fit(model, data_loader)
 
 
