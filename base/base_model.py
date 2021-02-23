@@ -24,6 +24,7 @@ class BaseModel(pl.LightningModule):
         self.checkpoint_dir = config.save_dir
         self.train_accuracy = pl.metrics.Accuracy()
         self.val_accuracy = pl.metrics.Accuracy()
+        self.test_accuracy = pl.metrics.Accuracy()
         # setup visualization writer instance                
         self.writer = TensorBoardLogger(save_dir=config.log_dir)
 
@@ -65,11 +66,12 @@ class BaseModel(pl.LightningModule):
         output = self.forward(data)
         loss = self.criterion(output, target)
 
-        for met in self.metric_ftns:
-            self.log(met.__name__, met(output, target))
+        self.test_accuracy(output, target)
         self.log('test_loss', loss)
-        self.log('test_acc', self.accuracy, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss
+
+    def test_epoch_end(self, outs):
+        self.log('test_acc_epoch', self.test_accuracy.compute())
 
     @abstractmethod
     def forward(self, *inputs):
